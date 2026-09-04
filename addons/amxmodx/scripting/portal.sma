@@ -1799,7 +1799,7 @@ public fwdTouch(iEnt, iOther)
         {
             fOrigin[0] = random_float(-4096.0, 4096.0)
             fOrigin[1] = random_float(-4096.0, 4096.0)
-            fOrigin[2] = random_float(-256.0, 256.0)
+            fOrigin[2] = random_float(-256.0, 1024.0)
             engfunc(EngFunc_TraceHull, fOrigin, fOrigin, IGNORE_MONSTERS, HULL_LARGE, iOther, 0)
             if ( get_tr2(0, TR_StartSolid) || get_tr2(0, TR_AllSolid) )
                 continue
