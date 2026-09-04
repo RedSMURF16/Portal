@@ -1,0 +1,68 @@
+[en] -- RedSMURF
+PORTAL_CHAT_TAG                            = ^4[PORTAL]^1
+PORTAL_CHAT_LIMIT                          = You've reached the maximum number of Portals ^4%d
+PORTAL_CHAT_NO_PORTAL                      = There are no Portals available
+PORTAL_CHAT_CREATE_NEW                     = ^3%s ^1created
+PORTAL_CHAT_REMOVE_CURRENT                 = ^3%s ^1removed
+PORTAL_CHAT_REMOVE_ALL                     = All Portals removed
+PORTAL_CHAT_SAVE                           = Portal data saved in ^4%s
+PORTAL_CHAT_SHOW_CURRENT                   = ^3%s ^1is %L
+PORTAL_CHAT_SHOW_ALL_SHOWN                 = All Portals are now Shown
+PORTAL_CHAT_SHOW_ALL_HIDDEN                = All Portals are now Hidden
+PORTAL_CHAT_STATUS_CURRENT                 = ^3%s ^1is %L
+PORTAL_CHAT_STATUS_ALL_ENABLED             = All Portals are now Enabled
+PORTAL_CHAT_STATUS_ALL_DISABLED            = All Portals are now Disabled
+
+PORTAL_CHAT_SHOWN                          = Shown
+PORTAL_CHAT_HIDDEN                         = Hidden
+PORTAL_CHAT_ENABLED                        = Enabled
+PORTAL_CHAT_DISABLED                       = Disabled
+
+PORTAL_NAV_NEXT                            = Next
+PORTAL_NAV_BACK                            = Back
+PORTAL_ON                                  = \y[ON]
+PORTAL_OFF                                 = \r[OFF]
+PORTAL_SHOWN                               = \y[SHOWN]
+PORTAL_HIDDEN                              = \r[HIDDEN]
+PORTAL_ENABLED                             = \y[ENABLED]
+PORTAL_DISABLED                            = \r[DISABLED]
+PORTAL_ROTATE_PITCH                        = \r[PITCH]
+PORTAL_ROTATE_YAW                          = \y[YAW]
+PORTAL_ROTATE_ROLL                         = \d[ROLL]
+
+PORTAL_MENU_TITLE                          = \dPortal - Version \y%s
+PORTAL_MENU_TITLE_PAGE                     = \yPage:\r
+PORTAL_ROOT_CREATE                         = Create Portal
+PORTAL_ROOT_EDIT                           = Edit Portal
+PORTAL_ROOT_REMOVE                         = Remove Portal
+PORTAL_ROOT_SAVE                           = Save Data
+PORTAL_ROOT_SHOW                           = Visibility Settings
+PORTAL_ROOT_STATUS                         = Status Settings
+PORTAL_ROOT_NOCLIP                         = Status Noclip %L
+PORTAL_ROOT_GODMODE                        = Status Godmode %L
+PORTAL_ROOT_ROTATE                         = Adjust Rotation
+PORTAL_ROOT_DESTINATION                    = Place Destination
+
+PORTAL_EDIT_SHOW                           = Edit Visibility
+PORTAL_EDIT_STATUS                         = Edit Status
+
+PORTAL_REMOVE_CURRENT                      = Remove Portal >> \y%s
+PORTAL_REMOVE_ALL                          = Remove all Portals
+
+PORTAL_SHOW_CURRENT                        = Show Portal >> %s%s %L
+PORTAL_SHOW_ALL_SHOW                       = Show all Portals
+PORTAL_SHOW_ALL_HIDE                       = Hide all Portals
+
+PORTAL_STATUS_CURRENT                      = Enable Portal >> %s%s %L
+PORTAL_STATUS_ALL_ENABLE                   = Enable all Portals
+PORTAL_STATUS_ALL_DISABLE                  = Disable all Portals
+
+PORTAL_ROTATE_UP                           = Turn Up
+PORTAL_ROTATE_DOWN                         = Turn Down
+PORTAL_ROTATE_GROUND                       = Set on ground >> %L
+PORTAL_ROTATE_MODE                         = Rotate Mode >> %L
+PORTAL_ROTATE_SIZE                         = Rotate Size >> %L
+PORTAL_ROTATE_SHAPE                        = Rotate Shape >> %L
+PORTAL_ROTATE_PLACE                        = Place Portal
+
+PORTAL_DESTINATION_PLACE                   = Place Destination
