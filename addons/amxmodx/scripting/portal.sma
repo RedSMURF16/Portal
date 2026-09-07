@@ -52,7 +52,7 @@
 #define PORTAL_KEY                  891277
 #define PORTAL_ARRAY_ITEM           pev_iuser1
 #define PORTAL_OWNER                pev_iuser1
-#define RANDOM_MAX                  100
+#define RANDOM_MAX                  2500
 #define SOUND_NAV                   "buttons/blip1.wav"
 #define SOUND_REMOVE                "buttons/button10.wav"
 #define SOUND_ALERT                 "buttons/bell1.wav"
@@ -158,6 +158,11 @@ enum _:MAIN_SETTINGS
     SETTING_DEFAULT_DLIGHT_COLOR[3],
     SETTING_DEFAULT_DLIGHT_LIFE,
     Float:SETTING_DEFAULT_COOLDOWN[2],
+    Float:SETTING_RANDOM_X[2],
+    Float:SETTING_RANDOM_Y[2],
+    Float:SETTING_RANDOM_Z[2],
+    bool:SETTING_STOP_VELOCITY_ON_TELEPORT,
+    bool:SETTING_KILL_ON_DESTINATION,
 
     Float:SETTING_MINS[3],
     Float:SETTING_MAXS[3],
@@ -582,6 +587,16 @@ ReadFile()
                             parseSetting(DTYPE_INT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_DLIGHT_LIFE], charsmax(g_eSettings[SETTING_DEFAULT_DLIGHT_LIFE]))
                         else if ( equali(szKey, "SETTING_DEFAULT_COOLDOWN") )
                             parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_COOLDOWN], charsmax(g_eSettings[SETTING_DEFAULT_COOLDOWN]))
+                        else if ( equali(szKey, "SETTING_RANDOM_X") )
+                            parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_RANDOM_X], charsmax(g_eSettings[SETTING_RANDOM_X]))
+                        else if ( equali(szKey, "SETTING_RANDOM_Y") )
+                            parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_RANDOM_Y], charsmax(g_eSettings[SETTING_RANDOM_Y]))
+                        else if ( equali(szKey, "SETTING_RANDOM_Z") )
+                            parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_RANDOM_Z], charsmax(g_eSettings[SETTING_RANDOM_Z]))
+                        else if ( equali(szKey, "SETTING_STOP_VELOCITY_ON_TELEPORT") )
+                            parseSetting(DTYPE_BOOL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT], charsmax(g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT]))
+                        else if ( equali(szKey, "SETTING_KILL_ON_DESTINATION") )
+                            parseSetting(DTYPE_BOOL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_KILL_ON_DESTINATION], charsmax(g_eSettings[SETTING_KILL_ON_DESTINATION]))
                         else if ( equali(szKey, "SETTING_MINS") )
                             parseSetting(DTYPE_FLOAT_LIST, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MINS], charsmax(g_eSettings[SETTING_MINS]))
                         else if ( equali(szKey, "SETTING_MAXS") )
@@ -1789,39 +1804,69 @@ public fwdTouch(iEnt, iOther)
     || (is_user_alive(iOther) && !(CsTeams:ePortal[PORTAL_TEAM] & cs_get_user_team(iOther))) )
         return HAM_IGNORED
 
-    new szSound[MAX_RESOURCE_PATH_LENGTH]
+    new szSound[MAX_RESOURCE_PATH_LENGTH], iHit
     ArrayGetString(ePortal[PORTAL_SOUND_TELEPORT], random(ArraySize(ePortal[PORTAL_SOUND_TELEPORT])), szSound, charsmax(szSound))
-    engfunc(EngFunc_EmitAmbientSound, iOther, CHAN_BODY, szSound, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
     if ( ePortal[PORTAL_FLAGS] & FLAG_RANDOM )
     {
         new Float:fOrigin[3]
-        for ( new i; i < RANDOM_MAX; i ++ )
+        for ( new i = 0; i < RANDOM_MAX; i ++ )
         {
-            fOrigin[0] = random_float(-4096.0, 4096.0)
-            fOrigin[1] = random_float(-4096.0, 4096.0)
-            fOrigin[2] = random_float(-256.0, 1024.0)
-            engfunc(EngFunc_TraceHull, fOrigin, fOrigin, IGNORE_MONSTERS, HULL_LARGE, iOther, 0)
+            xs_vec_copy(ePortal[PORTAL_ORIGIN_BASE], fOrigin)
+            fOrigin[0] += random_float(g_eSettings[SETTING_RANDOM_X][0], g_eSettings[SETTING_RANDOM_X][1])
+            fOrigin[1] += random_float(g_eSettings[SETTING_RANDOM_Y][0], g_eSettings[SETTING_RANDOM_Y][1])
+            fOrigin[2] += random_float(g_eSettings[SETTING_RANDOM_Z][0], g_eSettings[SETTING_RANDOM_Z][1])
+            engfunc(EngFunc_TraceHull, fOrigin, fOrigin, DONT_IGNORE_MONSTERS, HULL_HUMAN, iOther, 0)
             if ( get_tr2(0, TR_StartSolid) || get_tr2(0, TR_AllSolid) )
                 continue
 
+            iHit = get_tr2(0, TR_pHit)
             engfunc(EngFunc_SetOrigin, iOther, fOrigin)
+            engfunc(EngFunc_EmitAmbientSound, iOther, CHAN_BODY, szSound, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
+            if ( g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT] )
+                set_pev(iOther, pev_velocity, NULL_VECTOR)
+
+            if ( g_eSettings[SETTING_KILL_ON_DESTINATION] && pev_valid(iHit) )
+                ExecuteHamB(Ham_Killed, iHit, iOther, 2)
+
+            if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
+            {
+                ePortal[PORTAL_FLAGS] &= ~FLAG_ACTIVE
+                ePortal[PORTAL_FLAGS] |= FLAG_PENDING
+                ePortal[PORTAL_NEXT_ENABLE] = get_gametime() + random_float(ePortal[PORTAL_COOLDOWN][0], ePortal[PORTAL_COOLDOWN][1])
+                portalSetState(ePortal)
+            }
+
+            ArraySetArray(g_aPortal, iItem, ePortal)
             break
         }
     }
     else
     {
         engfunc(EngFunc_SetOrigin, iOther, ePortal[PORTAL_ORIGIN_DESTINATION])
+        engfunc(EngFunc_EmitAmbientSound, iOther, CHAN_BODY, szSound, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
+        if ( g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT] )
+            set_pev(iOther, pev_velocity, NULL_VECTOR)
+
+        if ( g_eSettings[SETTING_KILL_ON_DESTINATION] )
+        {
+            engfunc(EngFunc_TraceHull, ePortal[PORTAL_ORIGIN_DESTINATION], ePortal[PORTAL_ORIGIN_DESTINATION], DONT_IGNORE_MONSTERS, HULL_HUMAN, iOther, 0)
+            iHit = get_tr2(0, TR_pHit)
+
+            if ( pev_valid(iHit) )
+                ExecuteHamB(Ham_Killed, iHit, iOther, 2)
+        }
+
+        if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
+        {
+            ePortal[PORTAL_FLAGS] &= ~FLAG_ACTIVE
+            ePortal[PORTAL_FLAGS] |= FLAG_PENDING
+            ePortal[PORTAL_NEXT_ENABLE] = get_gametime() + random_float(ePortal[PORTAL_COOLDOWN][0], ePortal[PORTAL_COOLDOWN][1])
+            portalSetState(ePortal)
+        }
+
+        ArraySetArray(g_aPortal, iItem, ePortal)
     }
 
-    if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
-    {
-        ePortal[PORTAL_FLAGS] &= ~FLAG_ACTIVE
-        ePortal[PORTAL_FLAGS] |= FLAG_PENDING
-        ePortal[PORTAL_NEXT_ENABLE] = get_gametime() + random_float(ePortal[PORTAL_COOLDOWN][0], ePortal[PORTAL_COOLDOWN][1])
-        portalSetState(ePortal)
-    }
-
-    ArraySetArray(g_aPortal, iItem, ePortal)
     return HAM_IGNORED
 }
 
