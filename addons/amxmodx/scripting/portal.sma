@@ -163,6 +163,7 @@ enum _:MAIN_SETTINGS
     Float:SETTING_RANDOM_Z[2],
     bool:SETTING_STOP_VELOCITY_ON_TELEPORT,
     bool:SETTING_KILL_ON_DESTINATION,
+    bool:SETTING_KILL_ON_DESTINATION_WORLD,
 
     Float:SETTING_MINS[3],
     Float:SETTING_MAXS[3],
@@ -597,6 +598,8 @@ ReadFile()
                             parseSetting(DTYPE_BOOL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT], charsmax(g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT]))
                         else if ( equali(szKey, "SETTING_KILL_ON_DESTINATION") )
                             parseSetting(DTYPE_BOOL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_KILL_ON_DESTINATION], charsmax(g_eSettings[SETTING_KILL_ON_DESTINATION]))
+                        else if ( equali(szKey, "SETTING_KILL_ON_DESTINATION_WORLD") )
+                            parseSetting(DTYPE_BOOL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD], charsmax(g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD]))
                         else if ( equali(szKey, "SETTING_MINS") )
                             parseSetting(DTYPE_FLOAT_LIST, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MINS], charsmax(g_eSettings[SETTING_MINS]))
                         else if ( equali(szKey, "SETTING_MAXS") )
@@ -1826,7 +1829,7 @@ public fwdTouch(iEnt, iOther)
                 set_pev(iOther, pev_velocity, NULL_VECTOR)
 
             if ( g_eSettings[SETTING_KILL_ON_DESTINATION] && is_user_alive(iHit) )
-                ExecuteHamB(Ham_Killed, iHit, 0, 2)
+                ExecuteHamB(Ham_Killed, iHit, g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD] ? 0 : iOther, 2)
 
             if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
             {
@@ -1853,7 +1856,7 @@ public fwdTouch(iEnt, iOther)
             iHit = get_tr2(0, TR_pHit)
 
             if ( pev_valid(iHit) )
-                ExecuteHamB(Ham_Killed, iHit, 0, 2)
+                ExecuteHamB(Ham_Killed, iHit, g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD] ? 0 : iOther, 2)
         }
 
         if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
