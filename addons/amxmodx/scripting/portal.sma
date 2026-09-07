@@ -1825,8 +1825,8 @@ public fwdTouch(iEnt, iOther)
             if ( g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT] )
                 set_pev(iOther, pev_velocity, NULL_VECTOR)
 
-            if ( g_eSettings[SETTING_KILL_ON_DESTINATION] && pev_valid(iHit) )
-                ExecuteHamB(Ham_Killed, iHit, iOther, 2)
+            if ( g_eSettings[SETTING_KILL_ON_DESTINATION] && is_user_alive(iHit) )
+                ExecuteHamB(Ham_Killed, iHit, 0, 2)
 
             if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
             {
@@ -1853,7 +1853,7 @@ public fwdTouch(iEnt, iOther)
             iHit = get_tr2(0, TR_pHit)
 
             if ( pev_valid(iHit) )
-                ExecuteHamB(Ham_Killed, iHit, iOther, 2)
+                ExecuteHamB(Ham_Killed, iHit, 0, 2)
         }
 
         if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
