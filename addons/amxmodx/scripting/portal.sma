@@ -53,6 +53,7 @@
 #define PORTAL_ARRAY_ITEM           pev_iuser1
 #define PORTAL_OWNER                pev_iuser1
 #define RANDOM_MAX                  2500
+#define PORTAL_DEATH_PENALTY        10000.0
 #define SOUND_NAV                   "buttons/blip1.wav"
 #define SOUND_REMOVE                "buttons/button10.wav"
 #define SOUND_ALERT                 "buttons/bell1.wav"
@@ -105,13 +106,6 @@ enum
     FLAG_PLAYING            = (1 << 13),
     FLAG_LOCK               = (1 << 14),
     FLAG_PENDING            = (1 << 15)
-}
-
-enum
-{
-    ROTATE_MODE_PITCH,
-    ROTATE_MODE_YAW,
-    ROTATE_MODE_ROLL
 }
 
 enum
@@ -222,7 +216,6 @@ enum _:PLAYER_DATA
     PDATA_PORTAL_GHOST,
     PDATA_PORTAL_MENU,
     bool:PDATA_PORTAL_ACTION,
-    PDATA_ROTATE_MODE,
     Float:PDATA_OFFSET,
     Float:PDATA_NEXT_OFFSET,
 
@@ -301,7 +294,6 @@ enum
     ROTATE_DOWN,
 
     ROTATE_GROUND = 3,
-    ROTATE_MODE,
     ROTATE_PLACE
 }
 
@@ -339,13 +331,12 @@ new Array:g_aPortal,
     g_eSettings[MAIN_SETTINGS],
     g_ePlayerData[MAX_PLAYERS + 1][PLAYER_DATA],
     bool:g_bFileWasRead, g_iActivePlayers,
-    g_iFwdUpdateClientData, HamHook:g_iFwdSpawn, HamHook:g_iFwdPreThink, HamHook:g_iFwdKilled,
+    g_iFwdUpdateClientData, HamHook:g_iFwdSpawn, HamHook:g_iFwdTouch, HamHook:g_iFwdPreThink, HamHook:g_iFwdKilled,
     g_iPortal, g_iPortalConfig,
     g_iMaxPlayers
 
 new const g_iColorActive[] = { 0, 255, 0 }
 new const g_iColorInactive[] = { 255, 0, 0 }
-new g_szRotateMode[][] = {"PORTAL_ROTATE_PITCH", "PORTAL_ROTATE_YAW", "PORTAL_ROTATE_ROLL"}
 
 public plugin_init()
 {
@@ -359,7 +350,7 @@ public plugin_init()
 
     g_iFwdUpdateClientData = register_forward(FM_UpdateClientData, "fwdUpdateClientData", 1)
     g_iFwdSpawn = RegisterHam(Ham_Spawn, "info_target", "fwdSpawn", 1)
-    RegisterHam(Ham_Touch, "env_sprite", "fwdTouch")
+    g_iFwdTouch = RegisterHam(Ham_Touch, "env_sprite", "fwdTouch")
     g_iFwdPreThink = RegisterHam(Ham_Player_PreThink, "player", "fwdPreThink")
     g_iFwdKilled = RegisterHam(Ham_Killed, "player", "fwdKilled", 1)
     register_logevent("eventRoundStart", 2, "1=Round_Start")
@@ -1307,9 +1298,6 @@ public menuRotate(id, iMenu)
     id, ePortal[PORTAL_FLAGS] & FLAG_GROUND ? "PORTAL_ON" : "PORTAL_OFF")
     menu_additem(iMenu, szItem)
 
-    formatex(szItem, charsmax(szItem), "%L", id, "PORTAL_ROTATE_MODE", id, g_szRotateMode[g_ePlayerData[id][PDATA_ROTATE_MODE]])
-    menu_additem(iMenu, szItem)
-
     formatex(szItem, charsmax(szItem), "%L", id, "PORTAL_ROTATE_PLACE")
     menu_additem(iMenu, szItem)
 }
@@ -1328,8 +1316,8 @@ public menuHandlerRotate(id, menu, item)
         case ROTATE_UP:
         {
             pev(ePortal[PORTAL_ID], pev_angles, ePortal[PORTAL_ANGLES])
-            ePortal[PORTAL_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] -= g_eSettings[SETTING_ROTATION_STEP]
-            if ( ePortal[PORTAL_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] < -180.0 ) ePortal[PORTAL_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] += 360.0
+            ePortal[PORTAL_ANGLES][1] -= g_eSettings[SETTING_ROTATION_STEP]
+            if ( ePortal[PORTAL_ANGLES][1] < -180.0 ) ePortal[PORTAL_ANGLES][1] += 360.0
 
             set_pev(ePortal[PORTAL_ID], pev_angles, ePortal[PORTAL_ANGLES])
             ArraySetArray(g_aPortal, iItem, ePortal)
@@ -1340,8 +1328,8 @@ public menuHandlerRotate(id, menu, item)
         case ROTATE_DOWN:
         {
             pev(ePortal[PORTAL_ID], pev_angles, ePortal[PORTAL_ANGLES])
-            ePortal[PORTAL_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] += g_eSettings[SETTING_ROTATION_STEP]
-            if ( ePortal[PORTAL_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] > 180.0 ) ePortal[PORTAL_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] -= 360.0
+            ePortal[PORTAL_ANGLES][1] += g_eSettings[SETTING_ROTATION_STEP]
+            if ( ePortal[PORTAL_ANGLES][1] > 180.0 ) ePortal[PORTAL_ANGLES][1] -= 360.0
 
             set_pev(ePortal[PORTAL_ID], pev_angles, ePortal[PORTAL_ANGLES])
             ArraySetArray(g_aPortal, iItem, ePortal)
@@ -1353,14 +1341,6 @@ public menuHandlerRotate(id, menu, item)
         {
             ePortal[PORTAL_FLAGS] ^= FLAG_GROUND
             ArraySetArray(g_aPortal, iItem, ePortal)
-
-            portalSound(id, SOUND_MENU_NAV)
-            portalMenu(id, MENU_ROTATE)
-        }
-        case ROTATE_MODE:
-        {
-            if ( ++ g_ePlayerData[id][PDATA_ROTATE_MODE] > ROTATE_MODE_ROLL )
-                g_ePlayerData[id][PDATA_ROTATE_MODE] = ROTATE_MODE_PITCH
 
             portalSound(id, SOUND_MENU_NAV)
             portalMenu(id, MENU_ROTATE)
@@ -1545,7 +1525,6 @@ stock portalCreate(id, iItem)
     {
         EnableAction(id)
         g_ePlayerData[id][PDATA_PORTAL_GHOST] = ePortal[PORTAL_ID]
-        g_ePlayerData[id][PDATA_ROTATE_MODE] = ROTATE_MODE_YAW
         g_ePlayerData[id][PDATA_OFFSET] = g_eSettings[SETTING_OFFSET_BASE]
 
         ePortal[PORTAL_FLAGS] |= FLAG_GHOST
@@ -1560,7 +1539,10 @@ stock portalCreate(id, iItem)
 
     ArrayPushArray(g_aPortal, ePortal)
     if ( ++ g_iPortal == 1 )
+    {
         set_task(g_eSettings[SETTING_PORTAL_TASK], "portalTask", PORTAL_KEY, .flags = "b")
+        EnablePortal()
+    }
 }
 
 stock portalCreateSprite(ePortal[PORTAL], iSpriteType)
@@ -1592,7 +1574,7 @@ stock portalCreateSprite(ePortal[PORTAL], iSpriteType)
     engfunc(EngFunc_AngleVectors, ePortal[PORTAL_ANGLES], NULL_VECTOR, NULL_VECTOR, fOrigin)
     xs_vec_mul_scalar(fOrigin, g_eSettings[SETTING_DEFAULT_SPRITE_OFFSET], fOrigin)
     xs_vec_add(fOrigin, ePortal[PORTAL_ORIGIN_BASE], fOrigin)
-    set_pev(iEnt, pev_origin, fOrigin)
+    engfunc(EngFunc_SetOrigin, iEnt, fOrigin)
 
     set_pev(iEnt, pev_scale, ePortal[PORTAL_SPRITE_SCALE])
     set_ent_rendering(iEnt, kRenderFxNone, ePortal[PORTAL_SPRITE_COLOR][0], ePortal[PORTAL_SPRITE_COLOR][1], ePortal[PORTAL_SPRITE_COLOR][2], kRenderTransAdd, ePortal[PORTAL_SPRITE_ALPHA])
@@ -1602,9 +1584,11 @@ public portalRemove(iItem)
 {
     new ePortal[PORTAL]
     ArrayDeleteItem(g_aPortal, iItem)
-
     if ( -- g_iPortal == 0 )
+    {
         remove_task(PORTAL_KEY)
+        DisablePortal()
+    }
 
     for ( new i = iItem; i < g_iPortal; i ++ )
     {
@@ -1807,7 +1791,8 @@ public fwdTouch(iEnt, iOther)
     || (is_user_alive(iOther) && !(CsTeams:ePortal[PORTAL_TEAM] & cs_get_user_team(iOther))) )
         return HAM_IGNORED
 
-    new szSound[MAX_RESOURCE_PATH_LENGTH], iHit
+    new szSound[MAX_RESOURCE_PATH_LENGTH], iTarget, iHit
+    iTarget = g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD] ? ePortal[PORTAL_ID] : iOther
     ArrayGetString(ePortal[PORTAL_SOUND_TELEPORT], random(ArraySize(ePortal[PORTAL_SOUND_TELEPORT])), szSound, charsmax(szSound))
     if ( ePortal[PORTAL_FLAGS] & FLAG_RANDOM )
     {
@@ -1823,13 +1808,13 @@ public fwdTouch(iEnt, iOther)
                 continue
 
             iHit = get_tr2(0, TR_pHit)
-            engfunc(EngFunc_SetOrigin, iOther, fOrigin)
-            engfunc(EngFunc_EmitAmbientSound, iOther, CHAN_BODY, szSound, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
             if ( g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT] )
                 set_pev(iOther, pev_velocity, NULL_VECTOR)
 
-            if ( g_eSettings[SETTING_KILL_ON_DESTINATION] && is_user_alive(iHit) )
-                ExecuteHamB(Ham_Killed, iHit, g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD] ? 0 : iOther, 2)
+            if ( g_eSettings[SETTING_KILL_ON_DESTINATION]
+            && pev_valid(iHit)
+            && pev(iHit, pev_takedamage) != DAMAGE_NO )
+                ExecuteHamB(Ham_TakeDamage, iHit, iTarget, iTarget, PORTAL_DEATH_PENALTY, DMG_ALWAYSGIB)
 
             if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
             {
@@ -1839,24 +1824,25 @@ public fwdTouch(iEnt, iOther)
                 portalSetState(ePortal)
             }
 
+            engfunc(EngFunc_SetOrigin, iOther, fOrigin)
+            engfunc(EngFunc_EmitAmbientSound, iOther, CHAN_BODY, szSound, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
             ArraySetArray(g_aPortal, iItem, ePortal)
             break
         }
     }
     else
     {
-        engfunc(EngFunc_SetOrigin, iOther, ePortal[PORTAL_ORIGIN_DESTINATION])
-        engfunc(EngFunc_EmitAmbientSound, iOther, CHAN_BODY, szSound, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
         if ( g_eSettings[SETTING_STOP_VELOCITY_ON_TELEPORT] )
             set_pev(iOther, pev_velocity, NULL_VECTOR)
 
         if ( g_eSettings[SETTING_KILL_ON_DESTINATION] )
         {
-            engfunc(EngFunc_TraceHull, ePortal[PORTAL_ORIGIN_DESTINATION], ePortal[PORTAL_ORIGIN_DESTINATION], DONT_IGNORE_MONSTERS, HULL_HUMAN, iOther, 0)
+            engfunc(EngFunc_TraceHull, ePortal[PORTAL_ORIGIN_DESTINATION], ePortal[PORTAL_ORIGIN_DESTINATION], DONT_IGNORE_MONSTERS, HULL_HUMAN, 0, 0)
             iHit = get_tr2(0, TR_pHit)
 
-            if ( pev_valid(iHit) )
-                ExecuteHamB(Ham_Killed, iHit, g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD] ? 0 : iOther, 2)
+            if ( pev_valid(iHit)
+            && pev(iHit, pev_takedamage) != DAMAGE_NO )
+                ExecuteHamB(Ham_TakeDamage, iHit, iTarget, iTarget, PORTAL_DEATH_PENALTY, DMG_ALWAYSGIB)
         }
 
         if ( ePortal[PORTAL_FLAGS] & FLAG_COOLDOWN )
@@ -1867,6 +1853,8 @@ public fwdTouch(iEnt, iOther)
             portalSetState(ePortal)
         }
 
+        engfunc(EngFunc_SetOrigin, iOther, ePortal[PORTAL_ORIGIN_DESTINATION])
+        engfunc(EngFunc_EmitAmbientSound, iOther, CHAN_BODY, szSound, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
         ArraySetArray(g_aPortal, iItem, ePortal)
     }
 
@@ -2442,6 +2430,16 @@ stock DisableForward()
     DisableHamForward(g_iFwdSpawn)
     DisableHamForward(g_iFwdPreThink)
     DisableHamForward(g_iFwdKilled)
+}
+
+stock EnablePortal()
+{
+    EnableHamForward(g_iFwdTouch)
+}
+
+stock DisablePortal()
+{
+    DisableHamForward(g_iFwdTouch)
 }
 
 stock LogConfigError(const iLine, const szText[], any:...)

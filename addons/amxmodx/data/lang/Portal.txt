@@ -26,9 +26,6 @@ PORTAL_SHOWN                               = \y[SHOWN]
 PORTAL_HIDDEN                              = \r[HIDDEN]
 PORTAL_ENABLED                             = \y[ENABLED]
 PORTAL_DISABLED                            = \r[DISABLED]
-PORTAL_ROTATE_PITCH                        = \r[PITCH]
-PORTAL_ROTATE_YAW                          = \y[YAW]
-PORTAL_ROTATE_ROLL                         = \d[ROLL]
 
 PORTAL_MENU_TITLE                          = \dPortal - Version \y%s
 PORTAL_MENU_TITLE_PAGE                     = \yPage:\r
@@ -60,9 +57,7 @@ PORTAL_STATUS_ALL_DISABLE                  = Disable all Portals
 PORTAL_ROTATE_UP                           = Turn Up
 PORTAL_ROTATE_DOWN                         = Turn Down
 PORTAL_ROTATE_GROUND                       = Set on ground >> %L
-PORTAL_ROTATE_MODE                         = Rotate Mode >> %L
 PORTAL_ROTATE_SIZE                         = Rotate Size >> %L
-PORTAL_ROTATE_SHAPE                        = Rotate Shape >> %L
 PORTAL_ROTATE_PLACE                        = Place Portal
 
 PORTAL_DESTINATION_PLACE                   = Place Destination
