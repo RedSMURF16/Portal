@@ -2146,6 +2146,9 @@ stock portalSound(iEnt, iSound, bool:bPlayer = true)
 
 stock portalGet(ePortal[PORTAL], iEnt)
 {
+    if ( !isPortal(iEnt) )
+        return -1
+
     new iItem
     iItem = pev(iEnt, PORTAL_ARRAY_ITEM)
     if ( iItem < 0 || iItem >= g_iPortal )
