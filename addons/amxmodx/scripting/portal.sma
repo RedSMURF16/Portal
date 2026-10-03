@@ -1800,10 +1800,10 @@ public fwdPreThink(id)
 
             portalTrace(ePortal, id)
         }
-        else if ( g_ePlayerData[id][PDATA_PORTAL_ACTION] )
-        {
-            portalCheck(id)
-        }
+    }
+    else if ( g_ePlayerData[id][PDATA_PORTAL_ACTION] )
+    {
+        portalCheck(id)
     }
 
     return HAM_IGNORED
