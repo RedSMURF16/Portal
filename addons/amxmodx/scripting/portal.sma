@@ -1038,6 +1038,8 @@ public menuHandlerShow(id, menu, item)
         case SHOW_CURRENT:
         {
             ePortal[PORTAL_FLAGS] ^= FLAG_SHOW
+            if ( !(ePortal[PORTAL_FLAGS] & FLAG_SHOW) )
+                ePortal[PORTAL_FLAGS] &= ~FLAG_ACTIVE
             portalSetState(ePortal)
 
             client_print_color(id, id, "%L %L", id, "PORTAL_CHAT_TAG", id, "PORTAL_CHAT_SHOW_CURRENT",
@@ -1068,6 +1070,7 @@ public menuHandlerShow(id, menu, item)
             {
                 ArrayGetArray(g_aPortal, i, ePortal)
                 ePortal[PORTAL_FLAGS] &= ~FLAG_SHOW
+                ePortal[PORTAL_FLAGS] &= ~FLAG_ACTIVE
                 portalSetState(ePortal)
 
                 ArraySetArray(g_aPortal, i, ePortal)
@@ -1413,24 +1416,20 @@ public portalTask()
     for ( new i = 0; i < g_iPortal; i ++ )
     {
         ArrayGetArray(g_aPortal, i, ePortal)
-
-        if ( ePortal[PORTAL_FLAGS] & FLAG_SHOW )
+        if ( ePortal[PORTAL_FLAGS] & FLAG_ACTIVE )
         {
-            if ( ePortal[PORTAL_FLAGS] & FLAG_ACTIVE )
+            if ( ePortal[PORTAL_FLAGS] & FLAG_DLIGHT )
+                portalDLight(ePortal)
+        }
+        else
+        {
+            if ( ePortal[PORTAL_NEXT_COOLDOWN] > 0.0
+            && fCurrentTime >= ePortal[PORTAL_NEXT_COOLDOWN] )
             {
-                if ( ePortal[PORTAL_FLAGS] & FLAG_DLIGHT )
-                    portalDLight(ePortal)
-            }
-            else
-            {
-                if ( ePortal[PORTAL_NEXT_COOLDOWN] > 0.0
-                && fCurrentTime >= ePortal[PORTAL_NEXT_COOLDOWN] )
-                {
-                    ePortal[PORTAL_FLAGS] |= FLAG_ACTIVE
-                    ePortal[PORTAL_FLAGS] &= ~FLAG_PENDING
-                    portalSetState(ePortal)
-                    ArraySetArray(g_aPortal, i, ePortal)
-                }
+                ePortal[PORTAL_FLAGS] |= FLAG_ACTIVE
+                ePortal[PORTAL_FLAGS] &= ~FLAG_PENDING
+                portalSetState(ePortal)
+                ArraySetArray(g_aPortal, i, ePortal)
             }
         }
     }
