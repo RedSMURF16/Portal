@@ -62,8 +62,7 @@
 #define SOUND_ALERT                 "buttons/bell1.wav"
 
 new const PLUGIN_VERSION[]          = "1.0"
-new const Float:DELAY_ON_CONNECT    = 1.0
-new const Float:DELAY_ON_LOAD       = 2.0
+new const Float:DELAY_ON_LOAD       = 2.5
 new const ERROR_FILE[]              = "XenPORTAL_ERRORS.log"
 
 enum
@@ -319,8 +318,7 @@ new Array:g_aPortal,
     g_ePlayerData[MAX_PLAYERS + 1][PLAYER_DATA],
     bool:g_bFileWasRead, g_iActivePlayers,
     HamHook:g_iFwdTouch, HamHook:g_iFwdPreThink, HamHook:g_iFwdKilled,
-    g_iPortal, g_iPortalConfig,
-    g_iMaxPlayers
+    g_iPortal, g_iPortalConfig
 
 new const g_iColorActive[] = { 0, 255, 0 }
 new const g_iColorInactive[] = { 255, 0, 0 }
@@ -343,7 +341,6 @@ public plugin_init()
     DisablePortal()
 
     portalInit()
-    g_iMaxPlayers = get_maxplayers()
 }
 
 public plugin_precache()
@@ -394,10 +391,6 @@ ReadFile()
 {
     if ( g_bFileWasRead )
     {
-        for ( new id = 1; id <= g_iMaxPlayers; id ++ )
-            if ( is_user_connected(id) )
-                UpdateData(id)
-
         ArrayClear(g_aPortalConfig)
         ArrayClear(g_eSettings[SETTING_DEFAULT_SOUND_AMBIENT])
         ArrayClear(g_eSettings[SETTING_DEFAULT_SOUND_TELEPORT])
@@ -621,11 +614,6 @@ ReadFile()
     fclose(iFile)
 }
 
-public client_authorized(id)
-{
-    set_task(DELAY_ON_CONNECT, "UpdateData", id)
-}
-
 public client_disconnected(id)
 {
     new ePortal[PORTAL], iItem
@@ -639,11 +627,6 @@ public client_disconnected(id)
     DisableAction(id)
     g_ePlayerData[id][PDATA_PORTAL_GHOST]  = 0
     g_ePlayerData[id][PDATA_PORTAL_MENU]   = 0
-}
-
-public UpdateData(id)
-{
-    g_ePlayerData[id][PDATA_OFFSET] = g_eSettings[SETTING_OFFSET_BASE]
 }
 
 stock portalInit()
