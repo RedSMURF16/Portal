@@ -48,6 +48,13 @@
 #endif
 
 #define MAX_ENT                     32
+#define PORTAL_CHECK                10.0
+#define PORTAL_OFFSET_BASE          120.0
+#define PORTAL_OFFSET_MIN           65.0
+#define PORTAL_OFFSET_MAX           900.0
+#define PORTAL_OFFSET_STEP          10.0
+#define PORTAL_GHOST_ALPHA          120
+#define PORTAL_ROTATION_STEP        22.5
 #define ADMIN_ACCESS                ADMIN_RCON
 #define PORTAL_KEY                  891277
 #define PORTAL_ARRAY_ITEM           pev_iuser1
@@ -96,11 +103,9 @@ enum
     FLAG_GHOST              = (1 << 6),
     FLAG_GROUND             = (1 << 7),
     FLAG_ACTIVE             = (1 << 8),
-    FLAG_SOUND_AMBIENT      = (1 << 9),
-    FLAG_SOUND_TELEPORT     = (1 << 10),
-    FLAG_PLAYING            = (1 << 11),
-    FLAG_LOCK               = (1 << 12),
-    FLAG_PENDING            = (1 << 13)
+    FLAG_PLAYING            = (1 << 9),
+    FLAG_LOCK               = (1 << 10),
+    FLAG_PENDING            = (1 << 11)
 }
 
 enum
@@ -156,13 +161,7 @@ enum _:MAIN_SETTINGS
     Float:SETTING_SPRITE_MAXS[3],
 
     bool:SETTING_PORTAL_LOAD,
-    Float:SETTING_PORTAL_CHECK,
     Float:SETTING_PORTAL_TASK,
-    Float:SETTING_OFFSET_BASE,
-    Float:SETTING_OFFSET[2],
-    Float:SETTING_OFFSET_STEP,
-    SETTING_GHOST_ALPHA,
-    Float:SETTING_ROTATION_STEP
 }
 
 enum _:PORTAL
@@ -183,8 +182,6 @@ enum _:PORTAL
     Float:PORTAL_MINS[3],
     Float:PORTAL_MAXS[3],
 
-    Array:PORTAL_SOUND_AMBIENT,
-    Array:PORTAL_SOUND_TELEPORT,
     PORTAL_SOUND_AMBIENT_CURRENT[MAX_RESOURCE_PATH_LENGTH],
     Float:PORTAL_SPRITE_FRAMERATE,
     Float:PORTAL_SPRITE_SCALE,
@@ -457,8 +454,6 @@ ReadFile()
                         ePortal[PORTAL_DLIGHT_COLOR][2]         = g_eSettings[SETTING_DEFAULT_DLIGHT_COLOR][2]
                         ePortal[PORTAL_COOLDOWN][0]             = g_eSettings[SETTING_DEFAULT_COOLDOWN][0]
                         ePortal[PORTAL_COOLDOWN][1]             = g_eSettings[SETTING_DEFAULT_COOLDOWN][1]
-                        ePortal[PORTAL_SOUND_AMBIENT]           = ArrayClone(g_eSettings[SETTING_DEFAULT_SOUND_AMBIENT])
-                        ePortal[PORTAL_SOUND_TELEPORT]          = ArrayClone(g_eSettings[SETTING_DEFAULT_SOUND_TELEPORT])
 
                         iSection = SECTION_PORTAL
                         g_iPortalConfig ++
@@ -540,20 +535,8 @@ ReadFile()
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_SPRITE_MAXS], charsmax(g_eSettings[SETTING_SPRITE_MAXS]))
                         else if ( equali(szKey, "SETTING_PORTAL_LOAD") )
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_PORTAL_LOAD], charsmax(g_eSettings[SETTING_PORTAL_LOAD]))
-                        else if ( equali(szKey, "SETTING_PORTAL_CHECK") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_PORTAL_CHECK], charsmax(g_eSettings[SETTING_PORTAL_CHECK]))
                         else if ( equali(szKey, "SETTING_PORTAL_TASK") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_PORTAL_TASK], charsmax(g_eSettings[SETTING_PORTAL_TASK]))
-                        else if ( equali(szKey, "SETTING_OFFSET_BASE") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET_BASE], charsmax(g_eSettings[SETTING_OFFSET_BASE]))
-                        else if ( equali(szKey, "SETTING_OFFSET") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET], charsmax(g_eSettings[SETTING_OFFSET]))
-                        else if ( equali(szKey, "SETTING_OFFSET_STEP") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET_STEP], charsmax(g_eSettings[SETTING_OFFSET_STEP]))
-                        else if ( equali(szKey, "SETTING_GHOST_ALPHA") )
-                            parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_GHOST_ALPHA], charsmax(g_eSettings[SETTING_GHOST_ALPHA]))
-                        else if ( equali(szKey, "SETTING_ROTATION_STEP") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_ROTATION_STEP], charsmax(g_eSettings[SETTING_ROTATION_STEP]))
                     }
                     case SECTION_PORTAL:
                     {
@@ -561,26 +544,6 @@ ReadFile()
                             parseSetting(DTYPE_STRING_MODEL, szValue, charsmax(szValue), ePortal[PORTAL_MODEL], charsmax(ePortal[PORTAL_MODEL]))
                         else if ( equali(szKey, "PORTAL_SPRITE") )
                             parseSetting(DTYPE_STRING_MODEL, szValue, charsmax(szValue), ePortal[PORTAL_SPRITE], charsmax(ePortal[PORTAL_SPRITE]))
-                        else if ( equali(szKey, "PORTAL_SOUND_AMBIENT") )
-                        {
-                            if ( !(ePortal[PORTAL_FLAGS] & FLAG_SOUND_AMBIENT) )
-                            {
-                                ArrayClear(ePortal[PORTAL_SOUND_AMBIENT])
-                                ePortal[PORTAL_FLAGS] |= FLAG_SOUND_AMBIENT
-                            }
-
-                            parseSetting(DTYPE_ARRAY_SOUND, szValue, charsmax(szValue), ePortal[PORTAL_SOUND_AMBIENT], charsmax(ePortal[PORTAL_SOUND_AMBIENT]))
-                        }
-                        else if ( equali(szKey, "PORTAL_SOUND_TELEPORT") )
-                        {
-                            if ( !(ePortal[PORTAL_FLAGS] & FLAG_SOUND_TELEPORT) )
-                            {
-                                ArrayClear(ePortal[PORTAL_SOUND_TELEPORT])
-                                ePortal[PORTAL_FLAGS] |= FLAG_SOUND_TELEPORT
-                            }
-
-                            parseSetting(DTYPE_ARRAY_SOUND, szValue, charsmax(szValue), ePortal[PORTAL_SOUND_TELEPORT], charsmax(ePortal[PORTAL_SOUND_TELEPORT]))
-                        }
                         else if ( equali(szKey, "PORTAL_FLAGS") )
                             parseSetting(DTYPE_FLAGS, szValue, charsmax(szValue), ePortal[PORTAL_FLAGS], charsmax(ePortal[PORTAL_FLAGS]))
                         else if ( equali(szKey, "PORTAL_TEAM") )
@@ -1243,7 +1206,7 @@ public menuHandlerRotate(id, menu, item)
         case ROTATE_UP:
         {
             pev(ePortal[PORTAL_ID], pev_angles, ePortal[PORTAL_ANGLES])
-            ePortal[PORTAL_ANGLES][1] -= g_eSettings[SETTING_ROTATION_STEP]
+            ePortal[PORTAL_ANGLES][1] -= PORTAL_ROTATION_STEP
             if ( ePortal[PORTAL_ANGLES][1] < -180.0 ) ePortal[PORTAL_ANGLES][1] += 360.0
 
             set_pev(ePortal[PORTAL_ID], pev_angles, ePortal[PORTAL_ANGLES])
@@ -1255,7 +1218,7 @@ public menuHandlerRotate(id, menu, item)
         case ROTATE_DOWN:
         {
             pev(ePortal[PORTAL_ID], pev_angles, ePortal[PORTAL_ANGLES])
-            ePortal[PORTAL_ANGLES][1] += g_eSettings[SETTING_ROTATION_STEP]
+            ePortal[PORTAL_ANGLES][1] += PORTAL_ROTATION_STEP
             if ( ePortal[PORTAL_ANGLES][1] > 180.0 ) ePortal[PORTAL_ANGLES][1] -= 360.0
 
             set_pev(ePortal[PORTAL_ID], pev_angles, ePortal[PORTAL_ANGLES])
@@ -1432,7 +1395,7 @@ stock portalCreate(id, iItem)
     {
         EnableAction(id)
         g_ePlayerData[id][PDATA_PORTAL_GHOST] = ePortal[PORTAL_ID]
-        g_ePlayerData[id][PDATA_OFFSET] = g_eSettings[SETTING_OFFSET_BASE]
+        g_ePlayerData[id][PDATA_OFFSET] = PORTAL_OFFSET_BASE
 
         ePortal[PORTAL_FLAGS] |= FLAG_GHOST
     }
@@ -1679,7 +1642,7 @@ public fwdTouch(iEnt, iOther)
 
     new szSound[MAX_RESOURCE_PATH_LENGTH], iTarget, iHit
     iTarget = g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD] ? ePortal[PORTAL_ID] : iOther
-    ArrayGetString(ePortal[PORTAL_SOUND_TELEPORT], random(ArraySize(ePortal[PORTAL_SOUND_TELEPORT])), szSound, charsmax(szSound))
+    ArrayGetString(g_eSettings[SETTING_DEFAULT_SOUND_TELEPORT], random(ArraySize(g_eSettings[SETTING_DEFAULT_SOUND_TELEPORT])), szSound, charsmax(szSound))
     if ( ePortal[PORTAL_FLAGS] & FLAG_RANDOM )
     {
         new Float:fOrigin[3]
@@ -1764,14 +1727,14 @@ public fwdPreThink(id)
             {
                 if ( iButton & IN_ATTACK )
                 {
-                    g_ePlayerData[id][PDATA_OFFSET]      += g_eSettings[SETTING_OFFSET_STEP]
-                    g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], g_eSettings[SETTING_OFFSET][0], g_eSettings[SETTING_OFFSET][1])
+                    g_ePlayerData[id][PDATA_OFFSET]      += PORTAL_OFFSET_STEP
+                    g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], PORTAL_OFFSET_MIN, PORTAL_OFFSET_MAX)
                     g_ePlayerData[id][PDATA_NEXT_OFFSET] = fCurrentTime + 0.1
                 }
                 else if ( iButton & IN_ATTACK2 )
                 {
-                    g_ePlayerData[id][PDATA_OFFSET]      -= g_eSettings[SETTING_OFFSET_STEP]
-                    g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], g_eSettings[SETTING_OFFSET][0], g_eSettings[SETTING_OFFSET][1])
+                    g_ePlayerData[id][PDATA_OFFSET]      -= PORTAL_OFFSET_STEP
+                    g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], PORTAL_OFFSET_MIN, PORTAL_OFFSET_MAX)
                     g_ePlayerData[id][PDATA_NEXT_OFFSET] = fCurrentTime + 0.1
                 }
             }
@@ -1854,7 +1817,7 @@ stock portalCheck(id)
     global_get(glb_v_forward, fVec2)
 
     iBest = -1
-    fBestDist = g_eSettings[SETTING_PORTAL_CHECK]
+    fBestDist = PORTAL_CHECK
     for ( new i = 0; i < g_iPortal; i ++ )
     {
         ArrayGetArray(g_aPortal, i, ePortal)
@@ -2012,7 +1975,7 @@ stock portalSetSize(ePortal[PORTAL])
     portalCreateSprite(ePortal, SPRITE_BASE)
     engfunc(EngFunc_SetSize, ePortal[PORTAL_ID], ePortal[PORTAL_MINS], ePortal[PORTAL_MAXS])
     engfunc(EngFunc_SetSize, ePortal[PORTAL_SPRITE_BASE], fMins, fMaxs)
-    ArrayGetString(ePortal[PORTAL_SOUND_AMBIENT], random(ArraySize(ePortal[PORTAL_SOUND_AMBIENT])), ePortal[PORTAL_SOUND_AMBIENT_CURRENT], charsmax(ePortal[PORTAL_SOUND_AMBIENT_CURRENT]))
+    ArrayGetString(g_eSettings[SETTING_DEFAULT_SOUND_AMBIENT], random(ArraySize(g_eSettings[SETTING_DEFAULT_SOUND_AMBIENT])), ePortal[PORTAL_SOUND_AMBIENT_CURRENT], charsmax(ePortal[PORTAL_SOUND_AMBIENT_CURRENT]))
 }
 
 stock portalSetState(ePortal[PORTAL])
@@ -2071,12 +2034,12 @@ stock portalSelect(ePortal[PORTAL], iAction, bool:bSpriteExists = true)
     }
     else if ( iAction == TARGET_GHOST )
     {
-        set_ent_rendering(ePortal[PORTAL_ID], kRenderFxNone, 255, 255, 255, kRenderTransAlpha, g_eSettings[SETTING_GHOST_ALPHA])
+        set_ent_rendering(ePortal[PORTAL_ID], kRenderFxNone, 255, 255, 255, kRenderTransAlpha, PORTAL_GHOST_ALPHA)
 
         if ( bSpriteExists )
         {
-            set_ent_rendering(ePortal[PORTAL_SPRITE_BASE], kRenderFxNone, ePortal[PORTAL_SPRITE_COLOR][0], ePortal[PORTAL_SPRITE_COLOR][1], ePortal[PORTAL_SPRITE_COLOR][2], kRenderTransAdd, g_eSettings[SETTING_GHOST_ALPHA])
-            set_ent_rendering(ePortal[PORTAL_SPRITE_DESTINATION], kRenderFxNone, ePortal[PORTAL_SPRITE_COLOR][0], ePortal[PORTAL_SPRITE_COLOR][1], ePortal[PORTAL_SPRITE_COLOR][2], kRenderTransAdd, g_eSettings[SETTING_GHOST_ALPHA])
+            set_ent_rendering(ePortal[PORTAL_SPRITE_BASE], kRenderFxNone, ePortal[PORTAL_SPRITE_COLOR][0], ePortal[PORTAL_SPRITE_COLOR][1], ePortal[PORTAL_SPRITE_COLOR][2], kRenderTransAdd, PORTAL_GHOST_ALPHA)
+            set_ent_rendering(ePortal[PORTAL_SPRITE_DESTINATION], kRenderFxNone, ePortal[PORTAL_SPRITE_COLOR][0], ePortal[PORTAL_SPRITE_COLOR][1], ePortal[PORTAL_SPRITE_COLOR][2], kRenderTransAdd, PORTAL_GHOST_ALPHA)
         }
     }
     else if ( iAction == TARGET_HIDE )
@@ -2293,3 +2256,8 @@ stock LogConfigError(const iLine, const szText[], any:...)
 
     log_to_file(ERROR_FILE, "^nLine %d: %s", iLine, szError)
 }
+
+
+
+
+
