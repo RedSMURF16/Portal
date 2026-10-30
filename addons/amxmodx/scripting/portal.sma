@@ -20,7 +20,6 @@
 
 #include <amxmodx>
 #include <amxmisc>
-#include <cstrike>
 #include <fakemeta>
 #include <hamsandwich>
 #include <xs>
@@ -1380,7 +1379,7 @@ public portalTask()
 
 stock portalCreate(id, iItem)
 {
-    new iEnt = cs_create_entity("info_target")
+    new iEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
     if ( !pev_valid(iEnt) )
         return
 
@@ -1416,7 +1415,7 @@ stock portalCreate(id, iItem)
 
 stock portalCreateSprite(ePortal[PORTAL], iSpriteType)
 {
-    new iEnt = cs_create_entity("env_sprite")
+    new iEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "env_sprite"))
     if ( !pev_valid(iEnt) )
         return
 
@@ -1634,7 +1633,7 @@ public fwdTouch(iEnt, iOther)
     if ( (iItem = portalGet(ePortal, pev(iEnt, PORTAL_OWNER))) == -1
     || !(ePortal[PORTAL_FLAGS] & FLAG_ACTIVE)
     || (ePortal[PORTAL_FLAGS] & FLAG_PLAYERS_ONLY && !is_user_alive(iOther))
-    || (is_user_alive(iOther) && !(CsTeams:ePortal[PORTAL_TEAM] & cs_get_user_team(iOther))) )
+    || (is_user_alive(iOther) && !(ePortal[PORTAL_TEAM] & get_user_team(iOther))) )
         return HAM_IGNORED
 
     new szSound[MAX_RESOURCE_PATH_LENGTH], iTarget, iHit
