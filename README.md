@@ -18,6 +18,10 @@ Portals can be placed, managed and configured during gameplay with runtime contr
 - Dynamic portal rotation and natural ghost preview placement
 - Custom portal setups are saved per map and automatically loaded on every map start
 
+## 📋 Requirements
+- ReGameDLL
+- AMX Mod X 1.10+
+
 ## 💬 Commands
 - `say /portal` - Opens the Portal menu.
 - `say_team /portal` - Opens the Portal menu.
