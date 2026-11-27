@@ -1637,7 +1637,7 @@ public fwdTouch(iEnt, iOther)
         return HAM_IGNORED
 
     new szSound[MAX_RESOURCE_PATH_LENGTH], iTarget, iHit
-    iTarget = g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD] ? ePortal[PORTAL_ID] : iOther
+    iTarget = g_eSettings[SETTING_KILL_ON_DESTINATION_WORLD] ? 0 : iOther
     ArrayGetString(g_eSettings[SETTING_DEFAULT_SOUND_TELEPORT], random(ArraySize(g_eSettings[SETTING_DEFAULT_SOUND_TELEPORT])), szSound, charsmax(szSound))
     if ( ePortal[PORTAL_FLAGS] & FLAG_RANDOM )
     {
