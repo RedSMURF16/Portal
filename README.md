@@ -1,7 +1,7 @@
 <h1 align="center">Portal</h1>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=sb2x-6PJXL4"><img src="https://img.youtube.com/vi/sb2x-6PJXL4/maxresdefault.jpg" alt="Watch on YouTube" width="600"></a>
+  <img src="images/demo.gif" alt="Portal">
 </p>
 
 ## 📝 Description
